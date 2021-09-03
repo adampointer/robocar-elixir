@@ -3,7 +3,8 @@ defmodule RoboCar.PWM do
 
   alias RoboCar.PWM
 
-  def new(chip_num, channel_num), do: %PWM{chip_num: chip_num, channel_num: channel_num} |> maybe_export!
+  def new(chip_num, channel_num),
+    do: %PWM{chip_num: chip_num, channel_num: channel_num} |> maybe_export!
 
   def new(), do: %PWM{} |> maybe_export!
 
@@ -36,7 +37,7 @@ defmodule RoboCar.PWM do
   end
 
   defp maybe_export!(pwm) do
-    if pwm |> pwm_channel_path |> File.exists? do
+    if pwm |> pwm_channel_path |> File.exists?() do
       pwm
     else
       export!(pwm)
@@ -44,7 +45,7 @@ defmodule RoboCar.PWM do
   end
 
   defp export!(pwm) do
-    case pwm |> export_path()|> write_to_file(Integer.to_string(pwm.channel_num)) do
+    case pwm |> export_path() |> write_to_file(Integer.to_string(pwm.channel_num)) do
       :ok -> pwm
       {:error, reason} -> raise "Export failed with #{Atom.to_string(reason)}"
     end
@@ -83,6 +84,7 @@ defmodule RoboCar.PWM do
     |> File.open!([:write])
     |> IO.binwrite(:erlang.float_to_binary(val, decimals: 0))
   end
+
   defp write_to_file(path, val) when is_binary(val) do
     path
     |> File.open!([:write])

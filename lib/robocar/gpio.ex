@@ -7,6 +7,7 @@ defmodule RoboCar.GPIO do
 
     pin |> digital_write(:low)
   end
+
   def pin_mode(pin, :input) when pin > 0 do
     pin
     |> export
@@ -22,6 +23,7 @@ defmodule RoboCar.GPIO do
   def digital_write(pin, :high) when pin > 0 do
     pin |> pin_value_path() |> write_to_file("1")
   end
+
   def digital_write(pin, :low) when pin > 0 do
     pin |> pin_value_path() |> write_to_file("0")
   end
@@ -37,7 +39,7 @@ defmodule RoboCar.GPIO do
   defp handle_input_result("1"), do: :high
 
   defp export(pin) do
-    write_to_file "/sys/class/gpio/export", Integer.to_string(pin)
+    write_to_file("/sys/class/gpio/export", Integer.to_string(pin))
     pin
   end
 
@@ -49,18 +51,21 @@ defmodule RoboCar.GPIO do
 
   defp write_to_file(file_path, contents) do
     case file_path |> File.open([:write]) do
-    {:ok, file} ->
-      IO.binwrite(file, contents)
-    {:error, :eacces} ->
-      :timer.sleep(10)
-      write_to_file(file_path, contents)
-    {:error, reason} -> {:error, reason}
+      {:ok, file} ->
+        IO.binwrite(file, contents)
+
+      {:error, :eacces} ->
+        :timer.sleep(10)
+        write_to_file(file_path, contents)
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   defp read_from_file(file_path, length) do
-    File.open! file_path, [:read], fn(file) ->
+    File.open!(file_path, [:read], fn file ->
       IO.binread(file, length)
-    end
+    end)
   end
 end
