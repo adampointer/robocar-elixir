@@ -1,70 +1,16 @@
 defmodule RoboCar.PWM do
-  @moduledoc ~S"""
-  Control the hardware PWM via the sysfs interface
-  """
-
   defstruct chip_num: 0, channel_num: 0
 
   alias RoboCar.PWM
 
-  @doc ~S"""
-  Create a new `%RoboCar.PWM{chip_num: chip_num, channel_num: channel_num}` struct 
+  def new(chip_num, channel_num), do: %PWM{chip_num: chip_num, channel_num: channel_num} |> maybe_export!
 
-  ## Examples
+  def new(), do: %PWM{} |> maybe_export!
 
-      iex> RoboCar.PWM.new(1, 1)
-      %RoboCar.PWM{channel_num: 1, chip_num: 1}
+  def disable(pwm), do: write_to_enable(pwm, "0")
 
-  """
-  @spec new(integer, integer) :: %PWM{chip_num: integer, channel_num: integer}
-  def new(chip_num, channel_num) do
-    %PWM{chip_num: chip_num, channel_num: channel_num}
-  end
+  def enable(pwm), do: write_to_enable(pwm, "1")
 
-  @doc ~S"""
-  Create a new `%RoboCar.PWM{}` struct with default values
-
-  ## Examples
-
-      iex> RoboCar.PWM.new
-      %RoboCar.PWM{channel_num: 0, chip_num: 0}
-
-  """
-  @spec new() :: %PWM{chip_num: integer, channel_num: integer}
-  def new() do
-    %PWM{}
-  end
-
-  @doc ~S"""
-  Disable PWM channel
-
-  ## Examples
-
-      iex> RoboCar.PWM.new |> RoboCar.PWM.disable
-      :ok
-
-  """
-  @spec disable(%PWM{chip_num: integer, channel_num: integer}) :: :ok | {:error, term}
-  def disable(pwm) do
-    write_to_enable(pwm, "0")
-  end
-
-  @doc ~S"""
-  Enable PWM channel
-
-  ## Examples
-
-      iex> RoboCar.PWM.new |> RoboCar.PWM.enable
-      :ok
-
-  """
-  @spec enable(%PWM{chip_num: integer, channel_num: integer}) :: :ok | {:error, term}
-  def enable(pwm) do
-    write_to_enable(pwm, "1")
-  end
-
-  @spec configure(%PWM{chip_num: integer, channel_num: integer}, integer, integer) ::
-          {:ok, %PWM{chip_num: integer, channel_num: integer}} | {:error, term}
   def configure(pwm, freq_hz, power_pct) do
     period = 1_000_000_000 / freq_hz
     duty_cycle = period * (power_pct / 100)
@@ -76,8 +22,6 @@ defmodule RoboCar.PWM do
     end
   end
 
-  @spec configure!(%PWM{chip_num: integer, channel_num: integer}, integer, integer) ::
-          %PWM{chip_num: integer, channel_num: integer}
   def configure!(pwm, freq_hz, power_pct) do
     case configure(pwm, freq_hz, power_pct) do
       {:ok, pwm} -> pwm
@@ -85,68 +29,60 @@ defmodule RoboCar.PWM do
     end
   end
 
-  @spec sysfs_path(%PWM{chip_num: integer, channel_num: integer}) :: String
+  def clean_up(pwm) do
+    pwm |> configure!(0, 0) |> disable()
+
+    unexport(pwm)
+  end
+
+  defp maybe_export!(pwm) do
+    if pwm |> pwm_channel_path |> File.exists? do
+      pwm
+    else
+      export!(pwm)
+    end
+  end
+
+  defp export!(pwm) do
+    case pwm |> export_path()|> write_to_file(Integer.to_string(pwm.channel_num)) do
+      :ok -> pwm
+      {:error, reason} -> raise "Export failed with #{Atom.to_string(reason)}"
+    end
+  end
+
+  defp unexport(pwm) do
+    pwm
+    |> unexport_path()
+    |> write_to_file(Integer.to_string(pwm.channel_num))
+  end
+
+  defp export_path(pwm), do: Path.join([sysfs_path(pwm), "export"])
+
+  defp unexport_path(pwm), do: Path.join([sysfs_path(pwm), "unexport"])
+
+  defp pwm_channel_path(pwm), do: Path.join([sysfs_path(pwm), "pwm#{pwm.channel_num}"])
+
   defp sysfs_path(pwm) do
-    Path.join([
-      Application.fetch_env!(:robocar, :sysfs_root_path),
-      "pwmchip#{pwm.chip_num}",
-      "pwm#{pwm.channel_num}"
-    ])
+    Path.join([Application.fetch_env!(:robocar, :sysfs_root_path), "pwmchip#{pwm.chip_num}"])
   end
 
-  @spec enable_path(%PWM{chip_num: integer, channel_num: integer}) :: String
-  defp enable_path(pwm) do
-    pwm
-    |> sysfs_path()
-    |> Path.join("enable")
-  end
+  defp enable_path(pwm), do: pwm |> pwm_channel_path() |> Path.join("enable")
 
-  @spec duty_cycle_path(%PWM{chip_num: integer, channel_num: integer}) :: String
-  defp duty_cycle_path(pwm) do
-    pwm
-    |> sysfs_path()
-    |> Path.join("duty_cycle")
-  end
+  defp duty_cycle_path(pwm), do: pwm |> pwm_channel_path() |> Path.join("duty_cycle")
 
-  @spec period_path(%PWM{chip_num: integer, channel_num: integer}) :: String
-  defp period_path(pwm) do
-    pwm
-    |> sysfs_path()
-    |> Path.join("period")
-  end
+  defp period_path(pwm), do: pwm |> pwm_channel_path() |> Path.join("period")
 
-  @spec write_to_duty_cycle(%PWM{chip_num: integer, channel_num: integer}, String) ::
-          :ok | {:error, term}
-  defp write_to_duty_cycle(pwm, val) do
-    pwm
-    |> duty_cycle_path()
-    |> write_to_file(val)
-  end
+  defp write_to_duty_cycle(pwm, val), do: pwm |> duty_cycle_path() |> write_to_file(val)
 
-  @spec write_to_period(%PWM{chip_num: integer, channel_num: integer}, String) ::
-          :ok | {:error, term}
-  defp write_to_period(pwm, val) do
-    pwm
-    |> period_path()
-    |> write_to_file(val)
-  end
+  defp write_to_period(pwm, val), do: pwm |> period_path() |> write_to_file(val)
 
-  @spec write_to_enable(%PWM{chip_num: integer, channel_num: integer}, String) ::
-          :ok | {:error, term}
-  defp write_to_enable(pwm, val) do
-    pwm
-    |> enable_path()
-    |> write_to_file(val)
-  end
+  defp write_to_enable(pwm, val), do: pwm |> enable_path() |> write_to_file(val)
 
-  @spec write_to_file(String, String) :: :ok | {:error, term}
   defp write_to_file(path, val) when is_float(val) do
     path
     |> File.open!([:write])
     |> IO.binwrite(:erlang.float_to_binary(val, decimals: 0))
   end
-
-  @spec write_to_file(String, String) :: :ok | {:error, term}
   defp write_to_file(path, val) when is_binary(val) do
     path
     |> File.open!([:write])
