@@ -21,7 +21,7 @@ defmodule RoboCar.Drive do
 
   @impl true
   def init(_arg) do
-    case NifBridge.new do
+    case NifBridge.new_drive_system do
       {:ok, resource} -> {:ok, resource}
       {:error, reason} -> {:stop, reason}
     end

@@ -1,9 +1,10 @@
 use rustler::{Atom, Env, Term};
 use rustler::resource::ResourceArc;
 use std::sync::Mutex;
-use crate::drive_system::DriveSystem;
+use system::DriveSystem;
+use system::Sensor;
 
-mod drive_system;
+mod system;
 
 mod atoms {
   rustler::atoms! {
@@ -18,12 +19,44 @@ pub struct DriveSystemResource(Mutex<DriveSystem>);
 
 type DriveSystemArc = ResourceArc<DriveSystemResource>;
 
+pub struct SensorSystemResource(Mutex<Sensor>);
+
+type SensorSystemArc = ResourceArc<SensorSystemResource>;
+
+
 #[rustler::nif]
-fn new() -> Result<DriveSystemArc, Atom>{
+fn new_sensor_system() -> Result<SensorSystemArc, Atom>{
+  let sensor = match Sensor::new() {
+    Ok(sensor) => sensor,
+    Err(err) => {
+      println!("error initialising sensor: {}", err);
+      return Err(atoms::gpio_error())
+    }
+  };
+  let resource = ResourceArc::new(SensorSystemResource(Mutex::new(sensor)));
+
+  Ok(resource)
+}
+
+#[rustler::nif]
+fn poll_distance(resource: ResourceArc<SensorSystemResource>) -> Result<f64, Atom> {
+  let mut sensor = match resource.0.try_lock() {
+    Ok(guard) => guard,
+    Err(_) => return Err(atoms::lock_error()),
+  };
+
+  match sensor.poll_distance() {
+    Ok(distance) => Ok(distance),
+    Err(_) => Err(atoms::gpio_error()),
+  }
+}
+
+#[rustler::nif]
+fn new_drive_system() -> Result<DriveSystemArc, Atom>{
   let drive_system = match DriveSystem::new() {
     Ok(drive_system) => drive_system,
     Err(err) => {
-      println!("error initialising hardware: {}", err);
+      println!("error initialising drive system: {}", err);
       return Err(atoms::gpio_error())
     }
   };
@@ -83,7 +116,9 @@ fn stop(resource: ResourceArc<DriveSystemResource>) -> Result<(), Atom>{
 rustler::init!(
   "Elixir.RoboCar.Native.NifBridge",
   [
-    new,
+    new_drive_system,
+    new_sensor_system,
+    poll_distance,
     forwards,
     reverse,
     stop,
@@ -93,5 +128,6 @@ rustler::init!(
 
 fn load(env: Env, _info: Term) -> bool{
   rustler::resource!(DriveSystemResource, env);
+  rustler::resource!(SensorSystemResource, env);
   true
 }
