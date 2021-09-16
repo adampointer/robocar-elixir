@@ -1,0 +1,15 @@
+[package]
+name = "robocar_hardware"
+version = "0.1.0"
+authors = []
+edition = "2018"
+
+[lib]
+name = "robocar_hardware"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.22.0"
+gpio-cdev = "0.4.0"
+sysfs-pwm = "^0.1.0"

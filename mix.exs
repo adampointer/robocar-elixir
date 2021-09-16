@@ -41,8 +41,8 @@ defmodule RoboCar.MixProject do
       {:telemetry_poller, "~> 0.4"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
-      {:circuits_gpio, "~> 0.4"},
-      {:ex_doc, "~> 0.21", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.21", only: :dev, runtime: false},
+      {:rustler, "~> 0.22.0"}
     ]
   end
 

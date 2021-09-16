@@ -7,14 +7,9 @@ defmodule RoboCar.Application do
 
   def start(_type, _args) do
     children = [
-      # Start the Telemetry supervisor
       RoboCarWeb.Telemetry,
-      # Start the PubSub system
       {Phoenix.PubSub, name: RoboCar.PubSub},
-      # Start the Endpoint (http/https)
       RoboCarWeb.Endpoint
-      # Start a worker by calling: RoboCar.Worker.start_link(arg)
-      # {RoboCar.Worker, arg}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

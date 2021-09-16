@@ -1,72 +1,58 @@
 defmodule RoboCar.Drive do
   use GenServer
 
-  defstruct [:left_power, :right_power]
-
-  alias RoboCar.GPIO
-  alias RoboCar.Drive
-  alias RoboCar.PWM
-  import RoboCar.Pins
-
-  @pwm_frequency_hz 1000
+  alias RoboCar.Native.NifBridge
 
   def start() do
-    GenServer.start_link(__MODULE__, :ok)
+    GenServer.start_link(__MODULE__, :ok, name: DriveSystem)
   end
 
-  def forwards(pid, power_pct) do
-    GenServer.cast(pid, {:forwards, power_pct})
+  def forwards(power_pct) do
+    GenServer.cast(DriveSystem, {:forwards, power_pct})
   end
 
-  def stop(pid) do
-    GenServer.cast(pid, :stop)
+  def reverse(power_pct) do
+    GenServer.cast(DriveSystem, {:reverse, power_pct})
+  end
+
+  def stop() do
+    GenServer.cast(DriveSystem, :stop)
   end
 
   @impl true
   def init(_arg) do
-    with :ok = GPIO.pin_mode(left_motor_direction_a(), :output),
-         :ok = GPIO.pin_mode(left_motor_direction_b(), :output),
-         :ok = GPIO.pin_mode(right_motor_direction_a(), :output),
-         :ok = GPIO.pin_mode(right_motor_direction_b(), :output) do
-      drive = %Drive{left_power: PWM.new(0, 0), right_power: PWM.new(0, 2)}
-      {:ok, drive}
+    case NifBridge.new do
+      {:ok, resource} -> {:ok, resource}
+      {:error, reason} -> {:stop, reason}
     end
   end
 
   @impl true
-  def handle_cast({:forwards, power_pct}, drive) do
-    PWM.configure!(drive.left_power, @pwm_frequency_hz, power_pct) |> PWM.enable()
-    PWM.configure!(drive.right_power, @pwm_frequency_hz, power_pct) |> PWM.enable()
-
-    with :ok = GPIO.digital_write(left_motor_direction_a(), :high),
-         :ok = GPIO.digital_write(left_motor_direction_b(), :low),
-         :ok = GPIO.digital_write(right_motor_direction_a(), :high),
-         :ok = GPIO.digital_write(right_motor_direction_b(), :low) do
-      {:noreply, drive}
+  def handle_cast({:forwards, power_pct}, resource) do
+    case NifBridge.forwards(resource, power_pct) do
+      {:ok, _} -> {:noreply, resource}
+      {:error, reason} -> {:stop, reason, {}}
     end
   end
 
   @impl true
-  def handle_cast(:stop, drive) do
-    PWM.disable(drive.left_power)
-    PWM.disable(drive.right_power)
-
-    with :ok = GPIO.digital_write(left_motor_direction_a(), :low),
-         :ok = GPIO.digital_write(left_motor_direction_b(), :low),
-         :ok = GPIO.digital_write(right_motor_direction_a(), :low),
-         :ok = GPIO.digital_write(right_motor_direction_b(), :low) do
-      {:noreply, drive}
+  def handle_cast({:reverse, power_pct}, resource) do
+    case NifBridge.reverse(resource, power_pct) do
+      {:ok, _} -> {:noreply, resource}
+      {:error, reason} -> {:stop, reason, {}}
     end
   end
 
   @impl true
-  def terminate(_reason, drive) do
-    PWM.disable(drive.left_power)
-    PWM.disable(drive.right_power)
+  def handle_cast(:stop, resource) do
+    case NifBridge.stop(resource) do
+      {:ok, _} -> {:noreply, resource}
+      {:error, reason} -> {:stop, reason, {}}
+    end
+  end
 
-    GPIO.pin_release(left_motor_direction_a())
-    GPIO.pin_release(left_motor_direction_b())
-    GPIO.pin_release(right_motor_direction_a())
-    GPIO.pin_release(right_motor_direction_b())
+  @impl true
+  def terminate(_reason, _drive) do
+
   end
 end
