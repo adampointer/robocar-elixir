@@ -9,7 +9,9 @@ defmodule RoboCar.Application do
     children = [
       RoboCarWeb.Telemetry,
       {Phoenix.PubSub, name: RoboCar.PubSub},
-      RoboCarWeb.Endpoint
+      RoboCarWeb.Endpoint,
+      RoboCar.Drive,
+      RoboCar.Sonar
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

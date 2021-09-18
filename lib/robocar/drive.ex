@@ -3,7 +3,7 @@ defmodule RoboCar.Drive do
 
   alias RoboCar.Native.NifBridge
 
-  def start() do
+  def start_link(_arg) do
     GenServer.start_link(__MODULE__, :ok, name: DriveSystem)
   end
 
@@ -21,7 +21,7 @@ defmodule RoboCar.Drive do
 
   @impl true
   def init(_arg) do
-    case NifBridge.new_drive_system do
+    case NifBridge.new_drive_system() do
       {:ok, resource} -> {:ok, resource}
       {:error, reason} -> {:stop, reason}
     end
@@ -53,6 +53,5 @@ defmodule RoboCar.Drive do
 
   @impl true
   def terminate(_reason, _drive) do
-
   end
 end

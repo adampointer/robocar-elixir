@@ -22,7 +22,9 @@ defmodule RoboCarWeb do
       use Phoenix.Controller, namespace: RoboCarWeb
 
       import Plug.Conn
+      import RoboCarWeb.Gettext
       alias RoboCarWeb.Router.Helpers, as: Routes
+      import Phoenix.LiveView.Controller
     end
   end
 
@@ -41,18 +43,37 @@ defmodule RoboCarWeb do
     end
   end
 
+  def live_view do
+    quote do
+      use Phoenix.LiveView,
+        layout: {RoboCarWeb.LayoutView, "live.html"}
+
+      unquote(view_helpers())
+    end
+  end
+
+  def live_component do
+    quote do
+      use Phoenix.LiveComponent
+
+      unquote(view_helpers())
+    end
+  end
+
   def router do
     quote do
       use Phoenix.Router
 
       import Plug.Conn
       import Phoenix.Controller
+      import Phoenix.LiveView.Router
     end
   end
 
   def channel do
     quote do
       use Phoenix.Channel
+      import RoboCarWeb.Gettext
     end
   end
 
@@ -61,10 +82,14 @@ defmodule RoboCarWeb do
       # Use all HTML functionality (forms, tags, etc)
       use Phoenix.HTML
 
+      # Import LiveView helpers (live_render, live_component, live_patch, etc)
+      import Phoenix.LiveView.Helpers
+
       # Import basic rendering functionality (render, render_layout, etc)
       import Phoenix.View
 
       import RoboCarWeb.ErrorHelpers
+      import RoboCarWeb.Gettext
       alias RoboCarWeb.Router.Helpers, as: Routes
     end
   end

@@ -13,10 +13,10 @@ config :robocar,
 # Configures the endpoint
 config :robocar, RoboCarWeb.Endpoint,
   url: [host: "localhost"],
-  secret_key_base: "oF3U3Tae3xT8qkE852PL1ELSAnmYzlyOMZYPt4kKpOF4Inva2SELhJ9PK3l4G/N6",
+  secret_key_base: "mkXyx41B6MU6i9J22tBnYSuXBRg6M1A04qaMgSdyIkZuN22PUkes236nxL7Uy9zH",
   render_errors: [view: RoboCarWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: RoboCar.PubSub,
-  live_view: [signing_salt: "744v6mXy"]
+  live_view: [signing_salt: "wa/zGwH5EcY+/FRPZ+KeSTgcdHaQuBFm"]
 
 # Configures Elixir's Logger
 config :logger, :console,
@@ -25,8 +25,6 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
-
-config :robocar, :sysfs_root_path, "/sys/class/pwm"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

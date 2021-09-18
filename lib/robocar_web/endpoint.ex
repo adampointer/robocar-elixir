@@ -7,7 +7,7 @@ defmodule RoboCarWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_robocar_key",
-    signing_salt: "KcZA7KT7"
+    signing_salt: "rX0XQ3h4"
   ]
 
   socket "/socket", RoboCarWeb.UserSocket,

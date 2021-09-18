@@ -50,6 +50,7 @@ config :robocar, RoboCarWeb.Endpoint,
   live_reload: [
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
+      ~r"priv/gettext/.*(po)$",
       ~r"lib/robocar_web/(live|views)/.*(ex)$",
       ~r"lib/robocar_web/templates/.*(eex)$"
     ]
