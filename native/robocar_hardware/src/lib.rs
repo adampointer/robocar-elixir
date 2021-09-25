@@ -23,7 +23,6 @@ pub struct SensorSystemResource(Mutex<Sensor>);
 
 type SensorSystemArc = ResourceArc<SensorSystemResource>;
 
-
 #[rustler::nif]
 fn new_sensor_system() -> Result<SensorSystemArc, Atom>{
   let sensor = match Sensor::new() {
@@ -39,7 +38,7 @@ fn new_sensor_system() -> Result<SensorSystemArc, Atom>{
 }
 
 #[rustler::nif]
-fn poll_distance(resource: ResourceArc<SensorSystemResource>) -> Result<f64, Atom> {
+fn poll_distance(resource: ResourceArc<SensorSystemResource>) -> Result<f64, Atom>{
   let mut sensor = match resource.0.try_lock() {
     Ok(guard) => guard,
     Err(_) => return Err(atoms::lock_error()),
@@ -98,6 +97,38 @@ fn reverse(resource: ResourceArc<DriveSystemResource>, power_pct: u32) -> Result
 }
 
 #[rustler::nif]
+fn left(resource: ResourceArc<DriveSystemResource>, power_pct: u32) -> Result<(), Atom>{
+  let drive = match resource.0.try_lock() {
+    Ok(guard) => guard,
+    Err(_) => return Err(atoms::lock_error()),
+  };
+
+  match drive.left(power_pct) {
+    Ok(_) => Ok(()),
+    Err(err) => {
+      println!("error turning: {}", err);
+      return Err(atoms::gpio_error())
+    }
+  }
+}
+
+#[rustler::nif]
+fn right(resource: ResourceArc<DriveSystemResource>, power_pct: u32) -> Result<(), Atom>{
+  let drive = match resource.0.try_lock() {
+    Ok(guard) => guard,
+    Err(_) => return Err(atoms::lock_error()),
+  };
+
+  match drive.right(power_pct) {
+    Ok(_) => Ok(()),
+    Err(err) => {
+      println!("error turning: {}", err);
+      return Err(atoms::gpio_error())
+    }
+  }
+}
+
+#[rustler::nif]
 fn stop(resource: ResourceArc<DriveSystemResource>) -> Result<(), Atom>{
   let drive = match resource.0.try_lock() {
     Ok(guard) => guard,
@@ -121,7 +152,9 @@ rustler::init!(
     poll_distance,
     forwards,
     reverse,
+    right,
     stop,
+    left,
   ],
   load=load
 );

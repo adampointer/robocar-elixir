@@ -11,5 +11,9 @@ defmodule RoboCar.Native.NifBridge do
 
   def reverse(_drive, _power_pct), do: :erlang.nif_error(:not_not_loaded)
 
+  def left(_drive, _power_pct), do: :erlang.nif_error(:not_not_loaded)
+
+  def right(_drive, _power_pct), do: :erlang.nif_error(:not_not_loaded)
+
   def stop(_drive), do: :erlang.nif_error(:not_not_loaded)
 end

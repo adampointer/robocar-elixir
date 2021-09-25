@@ -3,7 +3,6 @@ use gpio_cdev::LineHandle;
 use sysfs_pwm::{Pwm, Error as PwmError};
 use super::gpio::get_output;
 
-
 const LEFT_FORWARD: u32 = 51;
 const LEFT_REVERSE: u32 = 77;
 const RIGHT_FORWARD: u32 = 76;
@@ -64,6 +63,26 @@ impl DriveSystem {
     Ok(())
   }
 
+  pub fn left(&self, power_pct: u32) -> Result<(), Box<dyn Error>> {
+    self.start_pwm(power_pct)?;
+    self.pin_left_reverse.set_value(1)?;
+    self.pin_right_reverse.set_value(0)?;
+    self.pin_left_forward.set_value(0)?;
+    self.pin_right_forward.set_value(1)?;
+
+    Ok(())
+  }
+
+  pub fn right(&self, power_pct: u32) -> Result<(), Box<dyn Error>> {
+    self.start_pwm(power_pct)?;
+    self.pin_left_reverse.set_value(0)?;
+    self.pin_right_reverse.set_value(1)?;
+    self.pin_left_forward.set_value(1)?;
+    self.pin_right_forward.set_value(0)?;
+
+    Ok(())
+  }
+
   fn start_pwm(&self, power_pct: u32) -> Result<(), PwmError> {
     let (period, duty_cycle) = DriveSystem::calculate_period_duty_cycle(power_pct);
     self.pwm_left.set_period_ns(period)?;
@@ -90,4 +109,3 @@ impl DriveSystem {
     (period, duty_cycle)
   }
 }
-

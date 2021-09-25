@@ -15,11 +15,27 @@ defmodule RoboCarWeb.Sonar do
   end
 
   @impl true
+  def handle_event("start", _value, socket) do
+    PubSub.broadcast(RoboCar.PubSub, RoboCar.Drive.topic(), :start)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("stop", _value, socket) do
+    PubSub.broadcast(RoboCar.PubSub, RoboCar.Drive.topic(), :stop)
+    {:noreply, socket}
+  end
+
+  @impl true
   def render(assigns) do
     ~L"""
     <div>
       <h1>The distance is: <%= @distance %></h1>
     </div>
+    <div>
+      <button phx-click="start">Start</button>
+      <button phx-click="stop">Stop</button>
+    </div<
     """
   end
 end
